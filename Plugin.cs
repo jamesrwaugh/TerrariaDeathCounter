@@ -14,40 +14,39 @@ namespace TerrariaDeathCounter
     [ApiVersion(2, 1)]
     class TerrariaDeathCounterPlugin : TerrariaPlugin
     {
-		public override string Name
-		{
-			get
-			{
-				return "Death Recorder";
-			}
-		}
+        public override string Name
+        {
+            get
+            {
+                return "Death Recorder";
+            }
+        }
 
-		public override Version Version
-		{
-			get
-			{
-				return new Version(1, 0);
-			}
-		}
-		
-		public override string Author
-		{
-			get
-			{
-				return "Discoveri";
-			}
-		}
+        public override Version Version
+        {
+            get
+            {
+                return new Version(1, 0);
+            }
+        }
+        
+        public override string Author
+        {
+            get
+            {
+                return "Discoveri";
+            }
+        }
 
-		public override string Description
-		{
-			get
-			{
-				return "Records and reports player deaths from each source, for laughs and stats.";
-			}
-		}
+        public override string Description
+        {
+            get
+            {
+                return "Records and reports player deaths from each source, for laughs and stats.";
+            }
+        }
 
         private static string saveFilename = "DeathRecords.json";
-        private static IDeathRepository deathRecords = new JsonDeathRepository(saveFilename);
 
         public TerrariaDeathCounterPlugin(Main game)
             : base(game)
@@ -55,7 +54,7 @@ namespace TerrariaDeathCounter
 
         }
 
-		public override void Initialize()
+        public override void Initialize()
         {
             ServerApi.Hooks.NetGetData.Register(this, OnGetData);
         }
@@ -95,12 +94,11 @@ namespace TerrariaDeathCounter
         {
             PlayerDeathReason playerDeathReason = PlayerDeathReason.FromReader(new BinaryReader(data));
             Debug.WriteLine(string.Format("-> {0} -> {1}", GetNameOfKiller(playerDeathReason), playerDeathReason.GetDeathText(player.name)));
-
-            string killerName = GetNameOfKiller(playerDeathReason);
-            int totalDeaths = deathRecords.RecordDeath(player.name, killerName);
-
-            string severMessage = string.Format("{0} has now died to '{1}' {2} times.", player.name, killerName, totalDeaths);
-            TShockAPI.Utils.Instance.Broadcast(severMessage, 128, 0, 0);
+            
+            if(!File.Exists(saveFilename))
+            {
+                File.Create(saveFilename);
+            }
 
             return true;
         }
@@ -125,7 +123,7 @@ namespace TerrariaDeathCounter
             }
             else
             {
-                return "Unkown Killer?!";
+                return "[Unkown Killer?!]";
             }
         }
     }

@@ -7,6 +7,7 @@ using TerrariaApi.Server;
 using TerrariaApi;
 using System.IO;
 using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace TerrariaDeathCounter
 {
@@ -44,6 +45,9 @@ namespace TerrariaDeathCounter
 				return "Records and reports player deaths from each source, for laughs and stats.";
 			}
 		}
+
+        private static string saveFilename = "DeathRecords.json";
+        private static IDeathRepository deathRecords = new JsonDeathRepository(saveFilename);
 
         public TerrariaDeathCounterPlugin(Main game)
             : base(game)
@@ -91,6 +95,13 @@ namespace TerrariaDeathCounter
         {
             PlayerDeathReason playerDeathReason = PlayerDeathReason.FromReader(new BinaryReader(data));
             Debug.WriteLine(string.Format("-> {0} -> {1}", GetNameOfKiller(playerDeathReason), playerDeathReason.GetDeathText(player.name)));
+
+            string killerName = GetNameOfKiller(playerDeathReason);
+            int totalDeaths = deathRecords.RecordDeath(player.name, killerName);
+
+            string severMessage = string.Format("{0} has now died to '{1}' {2} times.", player.name, killerName, totalDeaths);
+            TShockAPI.Utils.Instance.Broadcast(severMessage, 128, 0, 0);
+
             return true;
         }
 
@@ -108,9 +119,13 @@ namespace TerrariaDeathCounter
             {
                 return Main.player[reason.SourcePlayerIndex].name;
             }
+            else if(reason.SourceItemType != -1)
+            {
+                return Main.item[reason.SourceItemType].Name;
+            }
             else
             {
-                return "[Unkown Killer]";
+                return "Unkown Killer?!";
             }
         }
     }

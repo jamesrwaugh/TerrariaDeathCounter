@@ -8,7 +8,7 @@ namespace TerrariaDeathCounter
     class JsonDeathRepository : IDeathRepository
     {
         private string filename = string.Empty;
-        private DeathLedger ledger = new DeathLedger();
+        private readonly DeathLedger ledger = null;
 
         public JsonDeathRepository(string filename)
         {
@@ -17,6 +17,11 @@ namespace TerrariaDeathCounter
             if(!File.Exists(filename))
             {
                 File.CreateText(filename);
+                ledger = new DeathLedger();
+            }
+            else
+            {
+                ledger = JsonConvert.DeserializeObject<DeathLedger>(File.ReadAllText(filename));
             }
         }
 

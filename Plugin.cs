@@ -47,6 +47,7 @@ namespace TerrariaDeathCounter
         }
 
         private static string saveFilename = "DeathRecords.json";
+        private static IDeathRepository deathRecords = new JsonDeathRepository(saveFilename);
 
         public TerrariaDeathCounterPlugin(Main game)
             : base(game)
@@ -93,12 +94,14 @@ namespace TerrariaDeathCounter
         private bool RecordPlayerDeath(Player player, MemoryStream data)
         {
             PlayerDeathReason playerDeathReason = PlayerDeathReason.FromReader(new BinaryReader(data));
-            Debug.WriteLine(string.Format("-> {0} -> {1}", GetNameOfKiller(playerDeathReason), playerDeathReason.GetDeathText(player.name)));
-            
-            if(!File.Exists(saveFilename))
-            {
-                File.Create(saveFilename);
-            }
+
+            string killerName = GetNameOfKiller(playerDeathReason);
+            int totalDeathCount = deathRecords.RecordDeath(player.name, killerName);
+
+            Debug.WriteLine(string.Format("{0}({1}) -> {2}", killerName, totalDeathCount, playerDeathReason.GetDeathText(player.name)));
+
+            string serverMessage = string.Format("{0} has now died to a {1} {2} times.", player.name, killerName, totalDeathCount);
+            TShockAPI.Utils.Instance.Broadcast(serverMessage, 128, 0, 0);
 
             return true;
         }

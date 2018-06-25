@@ -126,7 +126,7 @@ namespace TerrariaDeathCounter
                 message.Append(string.Format("{0} has now died to a {1} {2} times.", player.name, killerName, totalDeathCount));
             }
 
-            if(killerName == "a deadly fall")
+            if(killerName == "deadly fall")
             {
                 message.Append(" Don't do that.");
             }
@@ -138,7 +138,7 @@ namespace TerrariaDeathCounter
         {
             if(IsFallDamageDeath(player, reason))
             {
-                return "a deadly fall";
+                return "deadly fall";
             }
             if(reason.SourceNPCIndex != -1)
             {

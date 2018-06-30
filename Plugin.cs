@@ -1,14 +1,12 @@
 using System;
-using Terraria;
-using Terraria.DataStructures;
-using Terraria.ID;
-using Terraria.Localization;
-using TerrariaApi.Server;
-using TerrariaApi;
 using System.IO;
 using System.Diagnostics;
-using Newtonsoft.Json;
 using System.Text;
+using System.Collections.Generic;
+using Terraria;
+using Terraria.DataStructures;
+using TerrariaApi.Server;
+using Newtonsoft.Json;
 
 namespace TerrariaDeathCounter
 {
@@ -27,7 +25,7 @@ namespace TerrariaDeathCounter
         {
             get
             {
-                return new Version(1, 0);
+                return new Version(1, 1);
             }
         }
         
@@ -95,12 +93,14 @@ namespace TerrariaDeathCounter
             data.ReadByte();
             PlayerDeathReason playerDeathReason = PlayerDeathReason.FromReader(new BinaryReader(data));
 
-            // Log the main PlayerDeathReason object for reference.
-            logWriter.ServerWriteLine(JsonConvert.SerializeObject(playerDeathReason), TraceLevel.Info);
-
             // Record failure in current death repository.
             string killerName = GetNameOfKiller(player, playerDeathReason);
             int totalDeathCount = deathRecords.RecordDeath(player.name, killerName);
+
+            // Log objects for reference.
+            string deathText = playerDeathReason.GetDeathText(player.name).ToString();
+            logWriter.ServerWriteLine(JsonConvert.SerializeObject(playerDeathReason), TraceLevel.Info);
+            logWriter.ServerWriteLine(string.Format("{0} {1}->{2} ({3})", player.name, deathText, killerName, totalDeathCount), TraceLevel.Info);
 
             // Broadcast message to server.
             string serverMessage = GetServerMessage(player, killerName, totalDeathCount);
@@ -136,16 +136,12 @@ namespace TerrariaDeathCounter
 
         private string GetNameOfKiller(Player player, PlayerDeathReason reason)
         {
-            if(IsFallDamageDeath(player, reason))
-            {
-                return "deadly fall";
-            }
             if(reason.SourceNPCIndex != -1)
             {
                 int NpcId = Main.npc[reason.SourceNPCIndex].netID;
                 return Lang.GetNPCNameValue(NpcId);
             }
-            else if(reason.SourceProjectileType != -1)
+            else if(reason.SourceProjectileType != 0)
             {
                 return Lang.GetProjectileName(reason.SourceProjectileType).Value;
             }
@@ -153,9 +149,13 @@ namespace TerrariaDeathCounter
             {
                 return Main.player[reason.SourcePlayerIndex].name;
             }
-            else if(reason.SourceItemType != -1)
+            else if(reason.SourceItemType != 0)
             {
                 return Main.item[reason.SourceItemType].Name;
+            }
+            else if(reason.SourceOtherIndex != -1)
+            {
+                return GetOtherKiller(reason.SourceOtherIndex);
             }
             else
             {
@@ -163,10 +163,35 @@ namespace TerrariaDeathCounter
             }
         }
 
-        private bool IsFallDamageDeath(Player player, PlayerDeathReason reason)
+        private string GetOtherKiller(int sourceOtherIndex)
         {
-            string deathText = reason.GetDeathText(player.name).ToString();
-            return deathText.Contains("fell to their death") || deathText.Contains("didn't bounce");
+            // Reference: Sources Lang.cs CreateDeathMessage
+            var strangeDeathReasons = new List<string>()
+            {
+                "deadly fall",
+                "deadly water source",
+                "overly-hot water source",
+                "strange something",
+                "slayer event",
+                "Medusa attack",
+                "sharp object",
+                "no-air adventure",
+                "heat source",
+                "green damage source",
+                "electric source",
+                "failed Wall of Flesh escape",
+                "strange something",
+                "teleportation overdose",
+                "teleportation overdose",
+                "teleportation overdose",
+            };
+
+            if(sourceOtherIndex >= 0 && sourceOtherIndex < strangeDeathReasons.Count)
+            {
+                return strangeDeathReasons[sourceOtherIndex];
+            }
+
+            return "very strange something";
         }
     }
 }
